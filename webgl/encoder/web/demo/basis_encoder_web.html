@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BasisU Encode Web</title>
+  <script src="./jquery-3.5.1.min.js"></script>
+  <script src="../bin/1.12/basisu.js"></script>
+</head>
+<body>
+<script>
+  basisu().then(module => {
+    try {
+      console.log('Current directory in FS:', module.FS.cwd());
+    } catch (e) {
+      console.log('error for cwd: ', e);
+    }
+
+    const url = './shannon.png';
+
+    // Load image into memory.
+    // Create a image file in VM storage `/tmp`.
+    // Compress and create `.basis` file in `/tmp`
+    $.ajax({
+      url,
+      type: 'GET',
+      beforeSend: function (xhr) {
+        xhr.overrideMimeType('text/plain; charset=x-user-defined');
+      },
+      success: function( data ) {
+        console.log('Loaded image from url: ', url);
+
+        // Module['FS_createDataFile']("/tmp", "BATHROOM_baseColor.png", data, true, true);
+        module.FS.createDataFile('/tmp', 'shannon.png', data, true, true);
+
+        console.log('Create image file in FS \'/tmp');
+
+        // Switch to `/tmp`
+        module.FS.chdir("/tmp");
+
+        console.log('Current directory in FS: ', module.FS.cwd());
+
+        try {
+          const stat = module.FS.stat(('./shannon.png'), true);
+          console.log('./shannon.png', ' stat:', stat);
+        } catch (e) {
+          console.log('error for stat: ', e);
+        }
+
+        try {
+          console.log('\n---------- Start compression ----------');
+          // Have to set `-no_multithreading`, otherwise there is error happens at line
+          // ```
+          // basisu_tool.cpp#compress_mode() {
+          //    job_pool jpool(num_threads);
+          // }
+          // ```
+          module.callMain(['./shannon.png', '-debug', '-no_multithreading']);
+          // '-mipmap',
+          // '-comp_level', '1',
+          // '-max_endpoints', '16128',
+          // '-max_selectors', '16128',
+          // '-no_selector_rdo', '-no_endpoint_rdo']);
+
+          console.log('---------- End Compression ----------\n');
+
+          try {
+            const stat = module.FS.stat(('./shannon.basis'), true);
+            console.log('./shannon.basis', ' stat:', stat);
+          } catch (e) {
+            console.log('error for stat: ', e);
+          }
+        } catch (e) {
+          console.log(e);
+        }
+      }
+    })
+
+  })
+</script>
+
+</body>
+</html>
